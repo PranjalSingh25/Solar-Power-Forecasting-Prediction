@@ -1,0 +1,97 @@
+2025-03-27 06:04:27,739 - lstm_training_hourly - INFO - --- Starting LSTM Training Pipeline ---
+2025-03-27 06:04:27,740 - lstm_training_hourly - INFO - Arguments: Namespace(input_file='C:\\Users\\pranj\\Desktop\\Project 1\\Final tester\\data\\processed\\weather_and_simulated_hourly_power.csv', feature_cols=['ALLSKY_SFC_SW_DWN', 'ALLSKY_SFC_SW_DNI', 'ALLSKY_SFC_SW_DIFF', 'T2M', 'WS10M'], target_col='simulated_ac_power_W', seq_len=24, epochs=50, batch_size=64, lr=0.001, patience=10, hidden_size=64, num_layers=2, dropout=0.2, split_train=0.7, split_val=0.1)
+2025-03-27 06:04:27,740 - lstm_training_hourly - INFO - Loading processed data from: C:\Users\pranj\Desktop\Project 1\Final tester\data\processed\weather_and_simulated_hourly_power.csv
+2025-03-27 06:04:27,891 - lstm_training_hourly - INFO - Data loaded successfully. Shape: (8784, 7)
+2025-03-27 06:04:27,892 - lstm_training_hourly - INFO - Starting model training process...
+2025-03-27 06:04:27,894 - lstm_training_hourly - INFO - Data split - Train: 6148, Validation: 878, Test: 1758
+2025-03-27 06:04:27,894 - lstm_training_hourly - INFO - Scaling data...
+2025-03-27 06:04:27,902 - lstm_training_hourly - INFO - Saving feature scaler to C:\Users\pranj\Desktop\Project 1\Final tester\models\feature_scaler_hourly.joblib
+2025-03-27 06:04:27,904 - lstm_training_hourly - INFO - Saving target scaler to C:\Users\pranj\Desktop\Project 1\Final tester\models\target_scaler_hourly.joblib
+2025-03-27 06:04:27,906 - lstm_training_hourly - INFO - Creating sequences with length 24...
+2025-03-27 06:04:27,920 - lstm_training_hourly - INFO - Sequence shapes - X_train: (6124, 24, 5), y_train: (6124, 1)
+2025-03-27 06:04:27,921 - lstm_training_hourly - INFO - Sequence shapes - X_val: (854, 24, 5), y_val: (854, 1)
+2025-03-27 06:04:27,921 - lstm_training_hourly - INFO - Sequence shapes - X_test: (1734, 24, 5), y_test: (1734, 1)
+2025-03-27 06:04:27,921 - lstm_training_hourly - INFO - Creating DataLoaders...
+2025-03-27 06:04:27,928 - lstm_training_hourly - INFO - Using device: cpu
+2025-03-27 06:04:30,322 - lstm_training_hourly - INFO - Model initialized:
+SolarLSTM(
+  (lstm): LSTM(5, 64, num_layers=2, batch_first=True, dropout=0.2)
+  (fc): Linear(in_features=64, out_features=1, bias=True)
+)
+2025-03-27 06:04:30,322 - lstm_training_hourly - INFO - Starting training loop...
+2025-03-27 06:04:31,178 - lstm_training_hourly - INFO - Epoch 1/50 | Train Loss: 0.032439 | Val Loss: 0.004188
+2025-03-27 06:04:31,183 - lstm_training_hourly - INFO - Validation loss improved. Saving model to C:\Users\pranj\Desktop\Project 1\Final tester\models\best_lstm_model_hourly.pth
+2025-03-27 06:04:31,886 - lstm_training_hourly - INFO - Epoch 2/50 | Train Loss: 0.004688 | Val Loss: 0.002505
+2025-03-27 06:04:31,889 - lstm_training_hourly - INFO - Validation loss improved. Saving model to C:\Users\pranj\Desktop\Project 1\Final tester\models\best_lstm_model_hourly.pth
+2025-03-27 06:04:32,583 - lstm_training_hourly - INFO - Epoch 3/50 | Train Loss: 0.003307 | Val Loss: 0.002119
+2025-03-27 06:04:32,585 - lstm_training_hourly - INFO - Validation loss improved. Saving model to C:\Users\pranj\Desktop\Project 1\Final tester\models\best_lstm_model_hourly.pth
+2025-03-27 06:04:33,279 - lstm_training_hourly - INFO - Epoch 4/50 | Train Loss: 0.002734 | Val Loss: 0.001645
+2025-03-27 06:04:33,281 - lstm_training_hourly - INFO - Validation loss improved. Saving model to C:\Users\pranj\Desktop\Project 1\Final tester\models\best_lstm_model_hourly.pth
+2025-03-27 06:04:33,982 - lstm_training_hourly - INFO - Epoch 5/50 | Train Loss: 0.002495 | Val Loss: 0.001659
+2025-03-27 06:04:33,982 - lstm_training_hourly - INFO - Validation loss did not improve for 1 epoch(s).
+2025-03-27 06:04:34,679 - lstm_training_hourly - INFO - Epoch 6/50 | Train Loss: 0.002348 | Val Loss: 0.001185
+2025-03-27 06:04:34,682 - lstm_training_hourly - INFO - Validation loss improved. Saving model to C:\Users\pranj\Desktop\Project 1\Final tester\models\best_lstm_model_hourly.pth
+2025-03-27 06:04:35,372 - lstm_training_hourly - INFO - Epoch 7/50 | Train Loss: 0.002365 | Val Loss: 0.001901
+2025-03-27 06:04:35,374 - lstm_training_hourly - INFO - Validation loss did not improve for 1 epoch(s).
+2025-03-27 06:04:36,069 - lstm_training_hourly - INFO - Epoch 8/50 | Train Loss: 0.002248 | Val Loss: 0.001562
+2025-03-27 06:04:36,069 - lstm_training_hourly - INFO - Validation loss did not improve for 2 epoch(s).
+2025-03-27 06:04:36,749 - lstm_training_hourly - INFO - Epoch 9/50 | Train Loss: 0.002022 | Val Loss: 0.001206
+2025-03-27 06:04:36,749 - lstm_training_hourly - INFO - Validation loss did not improve for 3 epoch(s).
+2025-03-27 06:04:37,446 - lstm_training_hourly - INFO - Epoch 10/50 | Train Loss: 0.001929 | Val Loss: 0.000836
+2025-03-27 06:04:37,448 - lstm_training_hourly - INFO - Validation loss improved. Saving model to C:\Users\pranj\Desktop\Project 1\Final tester\models\best_lstm_model_hourly.pth
+2025-03-27 06:04:38,136 - lstm_training_hourly - INFO - Epoch 11/50 | Train Loss: 0.001961 | Val Loss: 0.000957
+2025-03-27 06:04:38,136 - lstm_training_hourly - INFO - Validation loss did not improve for 1 epoch(s).
+2025-03-27 06:04:38,833 - lstm_training_hourly - INFO - Epoch 12/50 | Train Loss: 0.001890 | Val Loss: 0.001449
+2025-03-27 06:04:38,834 - lstm_training_hourly - INFO - Validation loss did not improve for 2 epoch(s).
+2025-03-27 06:04:39,537 - lstm_training_hourly - INFO - Epoch 13/50 | Train Loss: 0.001781 | Val Loss: 0.000943
+2025-03-27 06:04:39,538 - lstm_training_hourly - INFO - Validation loss did not improve for 3 epoch(s).
+2025-03-27 06:04:40,244 - lstm_training_hourly - INFO - Epoch 14/50 | Train Loss: 0.001787 | Val Loss: 0.001146
+2025-03-27 06:04:40,245 - lstm_training_hourly - INFO - Validation loss did not improve for 4 epoch(s).
+2025-03-27 06:04:40,934 - lstm_training_hourly - INFO - Epoch 15/50 | Train Loss: 0.001788 | Val Loss: 0.000648
+2025-03-27 06:04:40,937 - lstm_training_hourly - INFO - Validation loss improved. Saving model to C:\Users\pranj\Desktop\Project 1\Final tester\models\best_lstm_model_hourly.pth
+2025-03-27 06:04:41,633 - lstm_training_hourly - INFO - Epoch 16/50 | Train Loss: 0.001717 | Val Loss: 0.000715
+2025-03-27 06:04:41,633 - lstm_training_hourly - INFO - Validation loss did not improve for 1 epoch(s).
+2025-03-27 06:04:42,319 - lstm_training_hourly - INFO - Epoch 17/50 | Train Loss: 0.001655 | Val Loss: 0.000794
+2025-03-27 06:04:42,320 - lstm_training_hourly - INFO - Validation loss did not improve for 2 epoch(s).
+2025-03-27 06:04:43,035 - lstm_training_hourly - INFO - Epoch 18/50 | Train Loss: 0.001691 | Val Loss: 0.000613
+2025-03-27 06:04:43,037 - lstm_training_hourly - INFO - Validation loss improved. Saving model to C:\Users\pranj\Desktop\Project 1\Final tester\models\best_lstm_model_hourly.pth
+2025-03-27 06:04:43,755 - lstm_training_hourly - INFO - Epoch 19/50 | Train Loss: 0.001643 | Val Loss: 0.000992
+2025-03-27 06:04:43,756 - lstm_training_hourly - INFO - Validation loss did not improve for 1 epoch(s).
+2025-03-27 06:04:44,442 - lstm_training_hourly - INFO - Epoch 20/50 | Train Loss: 0.001765 | Val Loss: 0.001240
+2025-03-27 06:04:44,442 - lstm_training_hourly - INFO - Validation loss did not improve for 2 epoch(s).
+2025-03-27 06:04:45,138 - lstm_training_hourly - INFO - Epoch 21/50 | Train Loss: 0.001575 | Val Loss: 0.000560
+2025-03-27 06:04:45,140 - lstm_training_hourly - INFO - Validation loss improved. Saving model to C:\Users\pranj\Desktop\Project 1\Final tester\models\best_lstm_model_hourly.pth
+2025-03-27 06:04:45,866 - lstm_training_hourly - INFO - Epoch 22/50 | Train Loss: 0.001568 | Val Loss: 0.000818
+2025-03-27 06:04:45,866 - lstm_training_hourly - INFO - Validation loss did not improve for 1 epoch(s).
+2025-03-27 06:04:46,564 - lstm_training_hourly - INFO - Epoch 23/50 | Train Loss: 0.001544 | Val Loss: 0.000748
+2025-03-27 06:04:46,565 - lstm_training_hourly - INFO - Validation loss did not improve for 2 epoch(s).
+2025-03-27 06:04:47,253 - lstm_training_hourly - INFO - Epoch 24/50 | Train Loss: 0.001516 | Val Loss: 0.000607
+2025-03-27 06:04:47,254 - lstm_training_hourly - INFO - Validation loss did not improve for 3 epoch(s).
+2025-03-27 06:04:47,949 - lstm_training_hourly - INFO - Epoch 25/50 | Train Loss: 0.001488 | Val Loss: 0.000649
+2025-03-27 06:04:47,949 - lstm_training_hourly - INFO - Validation loss did not improve for 4 epoch(s).
+2025-03-27 06:04:48,644 - lstm_training_hourly - INFO - Epoch 26/50 | Train Loss: 0.001469 | Val Loss: 0.000675
+2025-03-27 06:04:48,644 - lstm_training_hourly - INFO - Validation loss did not improve for 5 epoch(s).
+2025-03-27 06:04:49,337 - lstm_training_hourly - INFO - Epoch 27/50 | Train Loss: 0.001452 | Val Loss: 0.000660
+2025-03-27 06:04:49,338 - lstm_training_hourly - INFO - Validation loss did not improve for 6 epoch(s).
+2025-03-27 06:04:50,025 - lstm_training_hourly - INFO - Epoch 28/50 | Train Loss: 0.001490 | Val Loss: 0.000878
+2025-03-27 06:04:50,025 - lstm_training_hourly - INFO - Validation loss did not improve for 7 epoch(s).
+2025-03-27 06:04:50,761 - lstm_training_hourly - INFO - Epoch 29/50 | Train Loss: 0.001488 | Val Loss: 0.000623
+2025-03-27 06:04:50,762 - lstm_training_hourly - INFO - Validation loss did not improve for 8 epoch(s).
+2025-03-27 06:04:51,485 - lstm_training_hourly - INFO - Epoch 30/50 | Train Loss: 0.001513 | Val Loss: 0.001121
+2025-03-27 06:04:51,485 - lstm_training_hourly - INFO - Validation loss did not improve for 9 epoch(s).
+2025-03-27 06:04:52,218 - lstm_training_hourly - INFO - Epoch 31/50 | Train Loss: 0.001448 | Val Loss: 0.000769
+2025-03-27 06:04:52,219 - lstm_training_hourly - INFO - Validation loss did not improve for 10 epoch(s).
+2025-03-27 06:04:52,219 - lstm_training_hourly - INFO - Early stopping triggered after 31 epochs.
+2025-03-27 06:04:52,219 - lstm_training_hourly - INFO - Training loop finished.
+2025-03-27 06:04:52,219 - lstm_training_hourly - INFO - Saving training history plot to C:\Users\pranj\Desktop\Project 1\Final tester\plots\training_history_hourly.png
+2025-03-27 06:04:53,222 - lstm_training_hourly - INFO - Performing final evaluation on the test set...
+2025-03-27 06:04:53,257 - lstm_training_hourly - INFO - Scalers loaded successfully.
+2025-03-27 06:04:53,283 - lstm_training_hourly - INFO - Best model loaded successfully.
+2025-03-27 06:04:53,386 - lstm_training_hourly - INFO - --- Test Set Evaluation Metrics ---
+2025-03-27 06:04:53,386 - lstm_training_hourly - INFO -   MSE: 37011.7656
+2025-03-27 06:04:53,386 - lstm_training_hourly - INFO -  RMSE: 192.3844
+2025-03-27 06:04:53,387 - lstm_training_hourly - INFO -   MAE: 106.7845
+2025-03-27 06:04:53,387 - lstm_training_hourly - INFO -    R²: 0.9816
+2025-03-27 06:04:53,387 - lstm_training_hourly - INFO - -----------------------------------
+2025-03-27 06:04:53,646 - lstm_training_hourly - INFO - Test prediction plot saved to C:\Users\pranj\Desktop\Project 1\Final tester\plots\test_predictions_hourly.png
+2025-03-27 06:04:53,647 - lstm_training_hourly - INFO - --- LSTM Training Pipeline Completed Successfully ---

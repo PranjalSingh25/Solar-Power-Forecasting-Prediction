@@ -1,0 +1,12 @@
+2025-03-27 09:14:15,454 - PV_Prediction_API - INFO - Using device: cpu
+2025-03-27 09:14:15,460 - PV_Prediction_API - INFO - Feature scaler loaded successfully.
+2025-03-27 09:14:15,463 - PV_Prediction_API - INFO - Target scaler loaded successfully.
+2025-03-27 09:14:15,491 - PV_Prediction_API - INFO - LSTM model loaded successfully.
+2025-03-27 09:14:15,578 - PV_Prediction_API - INFO - Dummy inference check passed.
+2025-03-27 09:14:15,581 - PV_Prediction_API - INFO - Starting Flask server on http://127.0.0.1:5001
+2025-03-27 09:14:15,601 - werkzeug - WARNING -  * Debugger is active!
+2025-03-27 09:14:15,608 - werkzeug - INFO -  * Debugger PIN: 236-255-254
+2025-03-27 09:17:09,427 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 09:17:09] "GET /health HTTP/1.1" 200 -
+2025-03-27 09:17:42,584 - PV_Prediction_API - INFO - Received request on /predict
+2025-03-27 09:17:42,633 - PV_Prediction_API - INFO - Prediction successful: 14.88 W
+2025-03-27 09:17:42,634 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 09:17:42] "POST /predict HTTP/1.1" 200 -

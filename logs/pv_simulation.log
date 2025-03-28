@@ -1,0 +1,14 @@
+2025-03-27 04:11:08,766 - PV_Simulation - INFO: --- Starting PV Simulation Script ---
+2025-03-27 04:11:08,767 - PV_Simulation - INFO: Starting PV simulation for location (28.6139, 77.209)
+2025-03-27 04:11:08,767 - PV_Simulation - INFO: Loading weather data from: data\nasa_power_raw.csv
+2025-03-27 04:11:08,778 - PV_Simulation - INFO: Loaded 2923 data points.
+2025-03-27 04:11:08,915 - PV_Simulation - INFO: Defining PV system location and parameters...
+2025-03-27 04:11:09,088 - PV_Simulation - INFO: Using Module: Canadian_Solar_Inc__CS6X_300M | Inverter: SMA_America__SB7000TL_US__240V_
+2025-03-27 04:11:09,089 - PV_Simulation - INFO: PVSystem object created.
+2025-03-27 04:11:09,089 - PV_Simulation - INFO: Initializing ModelChain...
+2025-03-27 04:11:09,090 - PV_Simulation - INFO: Running ModelChain simulation...
+2025-03-27 04:11:09,398 - PV_Simulation - INFO: Simulation complete.
+2025-03-27 04:11:09,399 - PV_Simulation - INFO: Processing simulation results...
+2025-03-27 04:11:09,402 - PV_Simulation - INFO: Saving combined data to: data\processed\weather_and_simulated_power.csv
+2025-03-27 04:11:09,445 - PV_Simulation - INFO: Successfully saved combined weather and simulated power data.
+2025-03-27 04:11:09,445 - PV_Simulation - INFO: --- PV Simulation Script Finished Successfully ---

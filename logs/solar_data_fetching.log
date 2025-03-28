@@ -1,0 +1,16 @@
+2025-03-27 04:06:05,609 - NASA_DataFetcher - INFO: Ensured directory exists: C:\Users\pranj\Desktop\Project 1\Final tester\data
+2025-03-27 04:06:05,610 - NASA_DataFetcher - INFO: NasaPowerFetcher initialized.
+2025-03-27 09:30:34,017 - NASA_DataFetcher - ERROR: An error occurred in the main loop: [Errno 22] Invalid argument
+Traceback (most recent call last):
+  File "c:\Users\pranj\Desktop\Project 1\Final tester\solar_data_pipeline_2.py", line 227, in interactive_input
+EOFError: EOF when reading a line
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "c:\Users\pranj\Desktop\Project 1\Final tester\solar_data_pipeline_2.py", line 270, in main
+    return {
+         ^^^^
+  File "c:\Users\pranj\Desktop\Project 1\Final tester\solar_data_pipeline_2.py", line 259, in interactive_input
+    print("\n Weather Parameters (Optional):")
+OSError: [Errno 22] Invalid argument
