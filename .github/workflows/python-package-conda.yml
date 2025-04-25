@@ -1,37 +1,27 @@
 name: Python Package using Conda
 
-on: [push] # Consider being more specific, e.g., push: branches: [ main ]
+on: [push]
 
 jobs:
   build-linux:
     runs-on: ubuntu-latest
-    # No matrix, so max-parallel is removed
+
     defaults:
       run:
-        # Ensure subsequent run steps execute in the activated conda environment
         shell: bash -l {0}
 
     steps:
     - uses: actions/checkout@v4
 
-    # Step 1: Setup Conda Environment using a dedicated action
     - name: Setup Miniconda
-      uses: conda-incubator/setup-miniconda@v3 # Use dedicated Conda setup action
+      uses: conda-incubator/setup-miniconda@v3
       with:
-        # Specify Python version within the Conda environment
         python-version: '3.10'
-        # Create environment from file and activate it automatically
         environment-file: environment.yml
-        # Use micromamba for faster environment solving (optional, but recommended)
         mamba-version: "*"
-        # Activate the environment created from the file for subsequent steps
-        auto-activate-base: false # We are activating the env from the file
-        activate-environment: '' # Name comes from environment.yml, or specify if needed
-        # Add conda-forge channel if your environment.yml uses it
-        # channel-priority: strict
-        # channels: conda-forge,defaults
+        auto-activate-base: false
+        activate-environment: <environment_name> # Replace <environment_name> with the name from environment.yml
 
-    # Step 2: Display Conda environment info (optional debugging)
     - name: Show Conda info
       run: |
         conda info
@@ -39,19 +29,13 @@ jobs:
         which python
         python --version
 
-    # Step 3: Lint with flake8 (assuming flake8 is in environment.yml)
-    # Environment is already activated by setup-miniconda
     - name: Lint with flake8
       run: |
         echo "Running critical flake8 checks..."
-        # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         echo "Running stylistic flake8 checks (won't fail build)..."
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-    # Step 4: Test with pytest (assuming pytest is in environment.yml)
-    # Environment is already activated
     - name: Test with pytest
       run: |
         pytest
