@@ -3,7 +3,10 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.8
+  - python=3.10
+  - pip
+  - flake8
+  - pytest
   - pandas
   - numpy
   - scikit-learn
@@ -14,7 +17,4 @@ dependencies:
   - requests
   - joblib
   - timezonefinder
-  - python=3.10
-  - pip
-  - flake8
-  - pytest
+
