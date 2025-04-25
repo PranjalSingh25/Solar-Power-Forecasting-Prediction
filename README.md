@@ -179,20 +179,17 @@ See `plots/training_history_hourly.png` for loss curves and `plots/test_predicti
 
 ## Future Improvements 🚀
 
-*   **Integrate Actual Measured Data:** Train/evaluate the model using real-world measured power output data (if available) instead of just simulated data for potentially higher real-world accuracy. Implement residual modeling (predicting the difference between simulation and actual).
+*   **Integrate Actual Measured Data:** Train/evaluate the model using real-world measured power output data (if available) instead of just simulated data for potentially higher real-world accuracy. Implement residual modelling (predicting the difference between simulation and actual).
 *   **Hyperparameter Tuning:** Use techniques like grid search, random search, or Bayesian optimisation to find optimal LSTM parameters (hidden size, layers, dropout, sequence length, learning rate).
 *   **Feature Engineering:** Add more relevant features, such as sine/cosine transformations of hour-of-day and day-of-year, cloud cover forecasts, or lagged power output values.
-*   **Explore Other Models:** Compare LSTM performance against other time series models like GRUs, Transformers, or even simpler models like Random Forest or Gradient Boosting (with appropriate feature engineering).
+*   **Explore Other Models:** Compare LSTM performance against other time series models like GRUS, Transformers, or even simpler models like Random Forest or Gradient Boosting (with appropriate feature engineering).
 *   **Robust Weather Forecasting:** Integrate a reliable weather forecast API directly into the `forecast_5day.py` script instead of relying on a manual CSV file. Handle potential discrepancies between forecast parameters and training parameters.
 *   **Cloud Deployment:** Deploy the Flask API to a cloud platform (like AWS, Google Cloud, Azure, or Heroku) for public accessibility.
 *   **Error Analysis:** Deeper dive into *when* the model makes the largest errors (e.g., specific weather conditions, time of day).
 
-## License 📄
-
-This project is licensed under the MIT License - see the [License.md](License.md) file for details (if you add one).
 
 ## Contact 📫
 
-[Pranjal Singh] - [pranjalsingh0825@gmail.com] - [https://www.linkedin.com/in/pranjal-singh-265937286/]
+[Pranjal Singh] - [https://www.linkedin.com/in/pranjal-singh-265937286/]
 
 Project Link: [https://github.com/PranjalSingh25/Solar-Power-Forecasting-Prediction](https://github.com/PranjalSingh25/Solar-Power-Forecasting-Prediction)
