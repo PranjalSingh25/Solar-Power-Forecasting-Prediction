@@ -14,3 +14,7 @@ dependencies:
   - requests
   - joblib
   - timezonefinder
+  - python=3.10
+  - pip
+  - flake8
+  - pytest
