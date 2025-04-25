@@ -75,7 +75,8 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # --- Loading Function ---
 def load_artifacts():
     """Loads the model and scalers into global variables."""
-    global DEVICE = 'cpu' or DEVICE = determine_device()
+    global DEVICE
+    DEVICE = 'cpu' or determine_device()
     logger.info(f"Using device: {DEVICE}")
 
     # Load Feature Scaler
