@@ -72,16 +72,10 @@ FEATURE_SCALER: Optional[MinMaxScaler] = None # Specify actual type if possible
 TARGET_SCALER: Optional[MinMaxScaler] = None # Specify actual type if possible
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "CPU")
 
-def determine_device():
-    # Logic to determine the device
-    return 'cpu'  # Example return value
-
-
 # --- Loading Function ---
 def load_artifacts():
     """Loads the model and scalers into global variables."""
-    global DEVICE
-    DEVICE = 'cpu' or determine_device()
+    global MODEL, FEATURE_SCALER, TARGET_SCALER
     logger.info(f"Using device: {DEVICE}")
 
     # Load Feature Scaler
