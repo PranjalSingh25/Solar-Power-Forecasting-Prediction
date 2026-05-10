@@ -1,0 +1,20 @@
+name: solar-power-forecasting
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - flake8
+  - pytest
+  - pandas
+  - numpy
+  - scikit-learn
+  - matplotlib
+  - flask
+  - pytorch
+  - pvlib
+  - requests
+  - joblib
+  - timezonefinder
+

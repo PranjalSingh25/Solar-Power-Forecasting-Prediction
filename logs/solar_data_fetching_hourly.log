@@ -1,0 +1,10 @@
+2025-03-27 05:53:08,372 - NASA_HourlyFetcher - INFO: Ensured directory exists: C:\Users\pranj\Desktop\Project 1\Final tester\data
+2025-03-27 05:53:08,372 - NASA_HourlyFetcher - INFO: NasaPowerHourlyFetcher initialized.
+2025-03-27 05:53:19,855 - NASA_HourlyFetcher - WARNING: Requested date range exceeds 365 days limit for hourly request. End date adjusted from 20240101 to 20161231.
+2025-03-27 05:53:19,855 - NASA_HourlyFetcher - WARNING: You may need to make multiple requests to fetch the full desired period.
+2025-03-27 05:53:19,855 - NASA_HourlyFetcher - WARNING: Requested date range exceeds 365 days limit for hourly request. End date adjusted from 20240101 to 20161231.
+2025-03-27 05:53:19,856 - NASA_HourlyFetcher - WARNING: You may need to make multiple requests to fetch the full desired period.
+2025-03-27 05:53:19,856 - NASA_HourlyFetcher - INFO: Fetching HOURLY data for Lat: 28.478901, Lon: 77.003859, Dates: 20160101 to 20161231, Params: ['ALLSKY_SFC_SW_DWN', 'ALLSKY_SFC_SW_DNI', 'ALLSKY_SFC_SW_DIFF', 'T2M', 'WS10M', 'RH2M']
+2025-03-27 05:53:30,034 - NASA_HourlyFetcher - INFO: Successfully retrieved 8784 HOURLY data points for parameters: ['ALLSKY_SFC_SW_DWN', 'ALLSKY_SFC_SW_DNI', 'ALLSKY_SFC_SW_DIFF', 'T2M', 'WS10M', 'RH2M']
+2025-03-27 05:53:30,093 - NASA_HourlyFetcher - INFO: Raw HOURLY data saved to C:\Users\pranj\Desktop\Project 1\Final tester\data\nasa_power_hourly_raw.csv
+2025-03-27 05:53:30,136 - NASA_HourlyFetcher - INFO: Raw HOURLY data also saved as Parquet to C:\Users\pranj\Desktop\Project 1\Final tester\data\nasa_power_hourly_raw.parquet

@@ -1,0 +1,22 @@
+{
+    "model_path": "models\\best_lstm_model.h5",
+    "scaler_path": "models\\scaler.pkl",
+    "sequence_length": 30,
+    "features": [
+        "ALLSKY_SFC_SW_DWN"
+    ],
+    "nasa_power_params": {
+        "latitude": 40.7128,
+        "longitude": -74.006,
+        "parameters": [
+            "ALLSKY_SFC_SW_DWN",
+            "T2M",
+            "RH2M",
+            "PRECTOTCORR",
+            "WS10M"
+        ]
+    },
+    "update_frequency_hours": 24,
+    "prediction_horizon_days": 7,
+    "api_port": 5000
+}
