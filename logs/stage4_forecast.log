@@ -1,0 +1,7 @@
+2026-05-11 01:28:34,222 [INFO] Loading C:\Users\pranj\Downloads\files\solar_roi_v2\data\processed\weather_and_simulated_hourly_power.csv
+2026-05-11 01:28:35,658 [INFO]   87,651 rows after NaN drop
+2026-05-11 01:28:36,455 [INFO] Scaler expects 9 features. Using: ['ALLSKY_SFC_SW_DWN', 'ALLSKY_SFC_SW_DNI', 'ALLSKY_SFC_SW_DIFF', 'T2M', 'WS10M', 'hour_sin', 'hour_cos', 'month_sin', 'month_cos']
+2026-05-11 01:28:36,463 [INFO] Model loaded.
+2026-05-11 01:28:36,463 [INFO] Predicting hourly generation …
+2026-05-11 01:29:53,362 [INFO]   Predicted non-NaN values: 87,627
+2026-05-11 01:29:53,488 [INFO]   Monthly kWh range: 581–926

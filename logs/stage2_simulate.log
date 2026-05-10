@@ -1,0 +1,10 @@
+2026-05-11 00:51:38,874 [INFO] Loading weather data from C:\Users\pranj\Downloads\files\solar_roi_v2\data\nasa_power_hourly_raw.csv
+2026-05-11 00:51:39,055 [INFO]   87,651 hourly rows loaded
+2026-05-11 00:51:39,851 [INFO]   Timezone: Asia/Kolkata
+2026-05-11 00:51:43,640 [INFO]   87,651 rows after NaN drop
+2026-05-11 00:51:43,840 [INFO] Running ModelChain simulation …
+2026-05-11 00:51:46,469 [INFO]   Peak AC power: 6710 W
+2026-05-11 00:51:46,469 [INFO]   Annual generation: 90166.3 kWh
+2026-05-11 00:51:46,470 [INFO] Computing horizon shading factors …
+2026-05-11 00:51:47,903 [INFO]   System size: 6.00 kWp
+2026-05-11 00:51:47,903 [INFO]   Annual shaded generation: 88383.5 kWh
