@@ -1,0 +1,17 @@
+2025-03-26 23:17:26,613 - INFO - Initializing application...
+2025-03-26 23:17:26,613 - INFO - Configuration loaded successfully.
+2025-03-26 23:17:26,613 - INFO - Model Path: c:\Users\pranj\Desktop\Project 1\Final tester\models\best_lstm_model.pth
+2025-03-26 23:17:26,613 - INFO - Device: cpu
+2025-03-26 23:17:26,614 - INFO - Input Size: 4
+2025-03-26 23:17:26,614 - INFO - Initializing SolarIrradiancePredictor...
+2025-03-26 23:17:26,616 - INFO - Loading model...
+2025-03-26 23:17:26,616 - INFO - Model will be loaded on: cpu
+2025-03-26 23:17:26,616 - INFO - Attempting to load model from: c:\Users\pranj\Desktop\Project 1\Final tester\models\best_lstm_model.pth
+2025-03-26 23:17:26,631 - INFO - Model loaded successfully.
+2025-03-26 23:17:26,632 - INFO - Registering application routes...
+2025-03-26 23:17:26,635 - INFO - SolarIrradiancePredictor initialization complete.
+2025-03-26 23:17:26,635 - INFO - Application initialized. Starting Flask server...
+2025-03-26 23:17:26,635 - INFO - Starting Flask server on http://127.0.0.1:5000
+2025-03-26 23:17:26,636 - INFO - Debug mode: True
+2025-03-26 23:17:26,636 - ERROR - Error starting Flask server: [WinError 10048] Only one usage of each socket address (protocol/network address/port) is normally permitted
+2025-03-26 23:17:26,636 - ERROR - Unexpected error during startup: [WinError 10048] Only one usage of each socket address (protocol/network address/port) is normally permitted

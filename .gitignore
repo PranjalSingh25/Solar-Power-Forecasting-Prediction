@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+*.pth
+*.joblib
+logs/
+*.log
+data/nasa_power_hourly_raw.csv
+data/processed/
+.vscode/
+.DS_Store
