@@ -1,13 +1,3 @@
-<<<<<<< HEAD
-"""
-Stage 7 — Solar ROI Prediction API
-Upgraded Flask API exposing:
-  GET  /health          — service status
-  POST /predict         — single next-hour power (W)
-  POST /roi-report      — full 10-year ROI analysis
-  GET  /tariffs         — list supported cities + tariffs
-"""
-
 import logging
 import sys
 import json
