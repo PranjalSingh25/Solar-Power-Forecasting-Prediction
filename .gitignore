@@ -9,4 +9,4 @@ data/nasa_power_hourly_raw.csv
 data/processed/
 .vscode/
 .DS_Store
-app_log.txt
+*.log
