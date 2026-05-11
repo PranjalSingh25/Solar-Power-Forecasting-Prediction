@@ -691,4 +691,3 @@ if __name__ == '__main__':
     # Run in debug mode for development (auto-reloads on code change)
     # Set debug=False for production
     app.run(host=host, port=port, debug=True)
->>>>>>> f8bfef9a65ffb87656ba2f335d8759fc324a2f7e
