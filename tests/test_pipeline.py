@@ -241,7 +241,7 @@ class TestLSTMInference:
         model.eval()
 
         # Use real data for the test sequence
-        df = pd.read_csv(self.PROCESSED, index_col="Timestamp", parse_dates=True)
+        df = pd.read_csv(self.PROCESSED, index_col="timestamp", parse_dates=True)
         FEATURE_COLS = ["ALLSKY_SFC_SW_DWN", "ALLSKY_SFC_SW_DNI",
                         "ALLSKY_SFC_SW_DIFF", "T2M", "WS10M"]
         idx = df.index
@@ -298,7 +298,7 @@ class TestLSTMInference:
         model.load_state_dict(torch.load(self.MODEL_PATH, map_location="cpu"))
         model.eval()
 
-        df = pd.read_csv(self.PROCESSED, index_col="Timestamp", parse_dates=True)
+        df = pd.read_csv(self.PROCESSED, index_col="timestamp", parse_dates=True)
         target = "ac_power_shaded_W" if "ac_power_shaded_W" in df.columns \
                  else "simulated_ac_power_W"
 
