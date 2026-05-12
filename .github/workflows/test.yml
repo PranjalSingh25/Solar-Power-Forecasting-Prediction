@@ -11,10 +11,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
+
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
       - name: Install dependencies
-        run: pip install -r requirements.txt pytest
+        run: |
+          pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install pvlib flask scikit-learn pandas numpy joblib \
+                      matplotlib timezonefinder pyarrow pytest
+
       - name: Run tests
         run: python -m pytest tests/ -v --tb=short
