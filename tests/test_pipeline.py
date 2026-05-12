@@ -210,11 +210,12 @@ class TestLSTMInference:
         model.eval()
         assert model is not None
 
-    @pytest.mark.skipif(
-        not (MODEL_PATH.exists() and PROCESSED.exists()),
-        reason="Model or data not ready"
-    )
-    def test_prediction_non_negative(self):
+@pytest.mark.skipif(
+    not (MODEL_PATH.exists() and PROCESSED.exists() and 
+         FEATURE_SCALER_PATH.exists()),
+    reason="Model files or processed data not present - run pipeline first"
+)
+def test_prediction_non_negative(self):
         """Power output should never be negative."""
         import torch
         import joblib
@@ -263,11 +264,12 @@ class TestLSTMInference:
         # Clip is applied in production code; raw model output should be near 0 at worst
         assert pred_w > -500, f"Prediction unreasonably negative: {pred_w}"
 
-    @pytest.mark.skipif(
-        not (MODEL_PATH.exists() and PROCESSED.exists()),
-        reason="Model or data not ready"
-    )
-    def test_model_r2_above_threshold(self):
+@pytest.mark.skipif(
+    not (MODEL_PATH.exists() and PROCESSED.exists() and 
+         FEATURE_SCALER_PATH.exists()),
+    reason="Model files or processed data not present - run pipeline first"
+)
+def test_model_r2_above_threshold(self):
         """
         Re-evaluate the saved model on the test split.
         Asserts R² > 0.95 — a degraded score signals model or data corruption.
