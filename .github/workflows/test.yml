@@ -26,8 +26,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install torch --index-url https://download.pytorch.org/whl/cpu
-          pip install pvlib flask scikit-learn pandas numpy joblib \
-                      matplotlib timezonefinder pyarrow pytest
+          pip install pvlib flask scikit-learn pandas numpy joblib matplotlib timezonefinder pyarrow pytest
 
       - name: Run tests
         run: python -m pytest tests/ -v --tb=short
