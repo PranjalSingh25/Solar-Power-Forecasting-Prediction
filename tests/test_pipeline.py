@@ -8,7 +8,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from solar_common import SolarLSTM
 
 class TestSubsidyCalculation:
     def setup_method(self):
@@ -153,6 +152,7 @@ class TestLSTMInference:
     def test_model_loads_without_error(self):
         import torch
         import joblib
+        from solar_common import SolarLSTM
 
         scaler = joblib.load(self.SCALER_FEAT)
         model  = SolarLSTM(scaler.n_features_in_)
@@ -168,6 +168,7 @@ class TestLSTMInference:
     def test_prediction_non_negative(self):
         import torch
         import joblib
+        from solar_common import SolarLSTM
 
         feat_scaler = joblib.load(self.SCALER_FEAT)
         tgt_scaler  = joblib.load(self.SCALER_TGT)
@@ -207,6 +208,7 @@ class TestLSTMInference:
         import torch
         import joblib
         from sklearn.metrics import r2_score
+        from solar_common import SolarLSTM
 
         feat_scaler = joblib.load(self.SCALER_FEAT)
         tgt_scaler  = joblib.load(self.SCALER_TGT)
