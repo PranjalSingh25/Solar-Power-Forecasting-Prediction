@@ -1,10 +1,3 @@
-"""
-Stage 3 — LSTM Training
-Trains a PyTorch LSTM on weather → AC power sequences.
-Adds time features (hour, month) to improve seasonal accuracy.
-Saves model weights + both scalers for inference.
-"""
-
 import numpy as np
 import pandas as pd
 import torch
@@ -20,6 +13,8 @@ import joblib
 import logging
 import argparse
 from pathlib import Path
+
+from solar_common import SolarLSTM, FEATURE_COLS, add_time_features
 
 BASE_DIR       = Path(__file__).resolve().parent
 PROCESSED_CSV  = BASE_DIR / "data" / "processed" / "weather_and_simulated_hourly_power.csv"
@@ -46,61 +41,20 @@ log = logging.getLogger("stage3")
 np.random.seed(42)
 torch.manual_seed(42)
 
-FEATURE_COLS = [
-    "ALLSKY_SFC_SW_DWN", "ALLSKY_SFC_SW_DNI", "ALLSKY_SFC_SW_DIFF",
-    "T2M", "WS10M",
-    "hour_sin", "hour_cos",   # time-of-day encoding
-    "month_sin", "month_cos", # seasonal encoding
-]
-TARGET_COL = "ac_power_shaded_W"   # use shaded output if available, else simulated_ac_power_W
+TARGET_COL = "ac_power_shaded_W"
 
-
-class SolarLSTM(nn.Module):
-    def __init__(self, input_size: int, hidden: int = 128,
-                 layers: int = 2, dropout: float = 0.2):
-        super().__init__()
-        self.lstm = nn.LSTM(input_size, hidden, layers,
-                            batch_first=True,
-                            dropout=dropout if layers > 1 else 0)
-        self.head = nn.Sequential(
-            nn.Linear(hidden, 64),
-            nn.ReLU(),
-            nn.Linear(64, 1),
-        )
-
-    def forward(self, x):
-        out, _ = self.lstm(x)
-        return self.head(out[:, -1, :])
-
-
-def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Encode hour-of-day and month as sine/cosine so the model sees cyclical time."""
-    idx = df.index
-    if hasattr(idx, "hour"):
-        df = df.copy()
-        df["hour_sin"]  = np.sin(2 * np.pi * idx.hour / 24)
-        df["hour_cos"]  = np.cos(2 * np.pi * idx.hour / 24)
-        df["month_sin"] = np.sin(2 * np.pi * idx.month / 12)
-        df["month_cos"] = np.cos(2 * np.pi * idx.month / 12)
-    return df
-
-
-def make_sequences(X: np.ndarray, y: np.ndarray,
-                   seq_len: int):
+def make_sequences(X, y, seq_len):
     Xs, ys = [], []
     for i in range(len(X) - seq_len):
         Xs.append(X[i: i + seq_len])
         ys.append(y[i + seq_len])
     return np.array(Xs), np.array(ys)
 
-
 def train(args):
-    # ── Load data ─────────────────────────────────────────────────────────────
     log.info(f"Loading {args.input}")
     df = pd.read_csv(args.input, index_col="Timestamp", parse_dates=True)
     df.sort_index(inplace=True)
 
-    # Use shaded power if available, else fall back to unshaded simulation
     target = TARGET_COL if TARGET_COL in df.columns else "simulated_ac_power_W"
     log.info(f"Target column: {target}")
 
@@ -111,16 +65,14 @@ def train(args):
     df = df[feat_cols + [target]].dropna()
     log.info(f"Dataset: {len(df):,} rows")
 
-    # ── Chronological split ───────────────────────────────────────────────────
     n = len(df)
     n_train = int(n * 0.70)
     n_val   = int(n * 0.10)
     train_df = df.iloc[:n_train]
     val_df   = df.iloc[n_train: n_train + n_val]
     test_df  = df.iloc[n_train + n_val:]
-    log.info(f"Split → train:{len(train_df)} val:{len(val_df)} test:{len(test_df)}")
+    log.info(f"Split -> train:{len(train_df)} val:{len(val_df)} test:{len(test_df)}")
 
-    # ── Scale ─────────────────────────────────────────────────────────────────
     feat_scaler = MinMaxScaler()
     tgt_scaler  = MinMaxScaler()
 
@@ -135,13 +87,11 @@ def train(args):
     joblib.dump(tgt_scaler,  TARGET_SCALER_PATH)
     log.info("Scalers saved.")
 
-    # ── Sequences ─────────────────────────────────────────────────────────────
     Xtr, ytr = make_sequences(X_train, y_train, args.seq_len)
     Xv,  yv  = make_sequences(X_val,   y_val,   args.seq_len)
     Xte, yte = make_sequences(X_test,  y_test,  args.seq_len)
-    log.info(f"Sequence shapes → Xtr:{Xtr.shape} Xv:{Xv.shape} Xte:{Xte.shape}")
+    log.info(f"Sequence shapes -> Xtr:{Xtr.shape} Xv:{Xv.shape} Xte:{Xte.shape}")
 
-    # ── Dataloaders ───────────────────────────────────────────────────────────
     def make_loader(X, y, shuffle):
         ds = TensorDataset(torch.FloatTensor(X), torch.FloatTensor(y))
         return DataLoader(ds, batch_size=args.batch, shuffle=shuffle, num_workers=0)
@@ -150,18 +100,16 @@ def train(args):
     val_loader   = make_loader(Xv,  yv,  False)
     test_loader  = make_loader(Xte, yte, False)
 
-    # ── Model ─────────────────────────────────────────────────────────────────
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     log.info(f"Device: {device}")
 
     model     = SolarLSTM(len(feat_cols), args.hidden, args.layers, args.dropout).to(device)
-    criterion = nn.HuberLoss()    # more robust to outliers than MSE
+    criterion = nn.HuberLoss()
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5, factor=0.5)
 
     log.info(f"Model params: {sum(p.numel() for p in model.parameters()):,}")
 
-    # ── Training loop ─────────────────────────────────────────────────────────
     best_val   = float("inf")
     no_improve = 0
     train_hist, val_hist = [], []
@@ -203,7 +151,6 @@ def train(args):
                 log.info(f"Early stop at epoch {epoch}")
                 break
 
-    # ── Test evaluation ───────────────────────────────────────────────────────
     model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
     model.eval()
     preds, actuals = [], []
@@ -218,9 +165,8 @@ def train(args):
     r2   = r2_score(actuals, preds)
     rmse = np.sqrt(mean_squared_error(actuals, preds))
     mae  = mean_absolute_error(actuals, preds)
-    log.info(f"Test  R²={r2:.4f}  RMSE={rmse:.1f}W  MAE={mae:.1f}W")
+    log.info(f"Test R2={r2:.4f} RMSE={rmse:.1f}W MAE={mae:.1f}W")
 
-    # ── Plots ─────────────────────────────────────────────────────────────────
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     axes[0].plot(train_hist, label="Train")
     axes[0].plot(val_hist,   label="Val")
@@ -232,18 +178,17 @@ def train(args):
     mn, mx = actuals.min(), actuals.max()
     axes[1].plot([mn, mx], [mn, mx], "r--")
     axes[1].set_xlabel("Actual (W)"); axes[1].set_ylabel("Predicted (W)")
-    axes[1].set_title(f"Test predictions  R²={r2:.3f}")
+    axes[1].set_title(f"Test predictions R2={r2:.3f}")
     axes[1].grid(True)
 
     plt.tight_layout()
     plt.savefig(PLOT_DIR / "training_results.png", dpi=120)
     plt.close()
-    log.info(f"Plot saved → plots/training_results.png")
+    log.info(f"Plot saved -> plots/training_results.png")
 
     return {"r2": r2, "rmse": rmse, "mae": mae,
             "feat_cols": feat_cols, "seq_len": args.seq_len,
             "hidden": args.hidden, "layers": args.layers}
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -260,6 +205,6 @@ if __name__ == "__main__":
 
     print("=== Stage 3: LSTM Training ===")
     metrics = train(args)
-    print(f"\n✓ Training complete")
-    print(f"  R²={metrics['r2']:.4f}  RMSE={metrics['rmse']:.1f}W  MAE={metrics['mae']:.1f}W")
-    print(f"  Model → {MODEL_PATH}")
+    print(f"\nTraining complete")
+    print(f"  R2={metrics['r2']:.4f}  RMSE={metrics['rmse']:.1f}W  MAE={metrics['mae']:.1f}W")
+    print(f"  Model -> {MODEL_PATH}")

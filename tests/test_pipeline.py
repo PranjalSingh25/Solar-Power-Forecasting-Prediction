@@ -1,14 +1,3 @@
-"""
-tests/test_pipeline.py
-──────────────────────
-End-to-end test suite for the Solar ROI Predictor pipeline.
-Covers: financial model logic, ROI engine, LSTM inference, and API endpoints.
-
-Run with:
-    python -m pytest tests/ -v
-    python -m pytest tests/ -v --tb=short   # compact output
-"""
-
 import sys
 import json
 import numpy as np
@@ -16,18 +5,12 @@ import pandas as pd
 import pytest
 from pathlib import Path
 
-# Make project root importable
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# STAGE 5+6 — Financial Model & ROI Engine
-# ══════════════════════════════════════════════════════════════════════════════
+from solar_common import SolarLSTM
 
 class TestSubsidyCalculation:
-    """PM Surya Ghar Muft Bijli Yojana subsidy slabs (MNRE Feb 2024)."""
-
     def setup_method(self):
         from stage56_financial_roi import pm_surya_ghar_subsidy
         self.subsidy = pm_surya_ghar_subsidy
@@ -45,19 +28,14 @@ class TestSubsidyCalculation:
         assert self.subsidy(3.0) == 78_000
 
     def test_above_3kwp(self):
-        # ₹78,000 + ₹9,000 per kWp above 3
-        assert self.subsidy(4.0) == 78_000 + 9_000        # 1 extra kWp
-        assert self.subsidy(6.0) == 78_000 + 27_000       # 3 extra kWp
-        assert self.subsidy(10.0) == 78_000 + 63_000      # 7 extra kWp (max)
+        assert self.subsidy(4.0) == 78_000 + 9_000
+        assert self.subsidy(6.0) == 78_000 + 27_000
+        assert self.subsidy(10.0) == 78_000 + 63_000
 
     def test_above_10kwp_capped(self):
-        # Extra capped at 7 kWp above 3 → max ₹1,41,000
         assert self.subsidy(15.0) == self.subsidy(10.0)
 
-
 class TestSystemSpec:
-    """SystemSpec dataclass properties."""
-
     def setup_method(self):
         from stage56_financial_roi import SystemSpec
         self.SystemSpec = SystemSpec
@@ -72,7 +50,7 @@ class TestSystemSpec:
 
     def test_unknown_city_fallback(self):
         spec = self.SystemSpec(3.0, 135_000, city="unknown_city")
-        assert spec.tariff == 7.00  # generic fallback
+        assert spec.tariff == 7.00
 
     def test_net_cost_after_subsidy(self):
         spec = self.SystemSpec(3.0, 135_000, city="delhi")
@@ -80,7 +58,6 @@ class TestSystemSpec:
         assert spec.net_cost == 135_000 - 78_000
 
     def test_net_cost_never_negative(self):
-        # Subsidy can't exceed install cost
         spec = self.SystemSpec(1.0, 10_000, city="delhi")
         assert spec.net_cost >= 0
 
@@ -88,10 +65,7 @@ class TestSystemSpec:
         spec = self.SystemSpec(4.0, 180_000, city="delhi")
         assert spec.annual_om_rs == 4.0 * 750
 
-
 class TestROIEngine:
-    """ROI computation against known-good reference outputs."""
-
     FORECAST_CSV = ROOT / "data" / "processed" / "monthly_forecast_10yr.csv"
 
     def setup_method(self):
@@ -101,14 +75,9 @@ class TestROIEngine:
 
     @pytest.mark.skipif(
         not (ROOT / "data" / "processed" / "monthly_forecast_10yr.csv").exists(),
-        reason="Forecast CSV not generated yet — run stage4_forecast_10yr.py first"
+        reason="Forecast CSV not generated yet - run stage4_forecast_10yr.py first"
     )
     def test_delhi_6kwp_payback_range(self):
-        """
-        Reference run: 6 kWp, Delhi, ₹2,70,000 installed.
-        Verified payback: 2 years 5 months (month 29).
-        Test asserts payback falls in a ±6 month tolerance window.
-        """
         spec = self.SystemSpec(
             system_kwp=6.0,
             install_cost_rs=270_000,
@@ -170,14 +139,7 @@ class TestROIEngine:
         result = self.compute_roi(spec)
         assert result["summary"]["co2_saved_tonnes"] > 0
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# STAGE 3 — LSTM Model Inference
-# ══════════════════════════════════════════════════════════════════════════════
-
 class TestLSTMInference:
-    """Tests that the saved model loads and produces sensible predictions."""
-
     MODEL_PATH          = ROOT / "models" / "best_lstm_model_hourly.pth"
     SCALER_FEAT         = ROOT / "models" / "feature_scaler_hourly.joblib"
     SCALER_TGT          = ROOT / "models" / "target_scaler_hourly.joblib"
@@ -186,24 +148,11 @@ class TestLSTMInference:
 
     @pytest.mark.skipif(
         not MODEL_PATH.exists(),
-        reason="Model not trained yet — run stage3_train_lstm.py first"
+        reason="Model not trained yet - run stage3_train_lstm.py first"
     )
     def test_model_loads_without_error(self):
         import torch
         import joblib
-        import torch.nn as nn
-
-        class SolarLSTM(nn.Module):
-            def __init__(self, input_size, hidden=128, layers=2, dropout=0.2):
-                super().__init__()
-                self.lstm = nn.LSTM(input_size, hidden, layers,
-                                    batch_first=True,
-                                    dropout=dropout if layers > 1 else 0)
-                self.head = nn.Sequential(
-                    nn.Linear(hidden, 64), nn.ReLU(), nn.Linear(64, 1))
-            def forward(self, x):
-                out, _ = self.lstm(x)
-                return self.head(out[:, -1, :])
 
         scaler = joblib.load(self.SCALER_FEAT)
         model  = SolarLSTM(scaler.n_features_in_)
@@ -217,22 +166,8 @@ class TestLSTMInference:
         reason="Model files or processed data not present - run pipeline first"
     )
     def test_prediction_non_negative(self):
-        """Power output should never be negative."""
         import torch
         import joblib
-        import torch.nn as nn
-
-        class SolarLSTM(nn.Module):
-            def __init__(self, input_size, hidden=128, layers=2, dropout=0.2):
-                super().__init__()
-                self.lstm = nn.LSTM(input_size, hidden, layers,
-                                    batch_first=True,
-                                    dropout=dropout if layers > 1 else 0)
-                self.head = nn.Sequential(
-                    nn.Linear(hidden, 64), nn.ReLU(), nn.Linear(64, 1))
-            def forward(self, x):
-                out, _ = self.lstm(x)
-                return self.head(out[:, -1, :])
 
         feat_scaler = joblib.load(self.SCALER_FEAT)
         tgt_scaler  = joblib.load(self.SCALER_TGT)
@@ -242,7 +177,6 @@ class TestLSTMInference:
         model.load_state_dict(torch.load(self.MODEL_PATH, map_location="cpu"))
         model.eval()
 
-        # Use real data for the test sequence
         df = pd.read_csv(self.PROCESSED, index_col="Timestamp", parse_dates=True)
         FEATURE_COLS = ["ALLSKY_SFC_SW_DWN", "ALLSKY_SFC_SW_DNI",
                         "ALLSKY_SFC_SW_DIFF", "T2M", "WS10M"]
@@ -262,7 +196,6 @@ class TestLSTMInference:
             pred_scaled = model(t).numpy()
         pred_w = float(tgt_scaler.inverse_transform(pred_scaled)[0, 0])
 
-        # Clip is applied in production code; raw model output should be near 0 at worst
         assert pred_w > -500, f"Prediction unreasonably negative: {pred_w}"
 
     @pytest.mark.skipif(
@@ -271,27 +204,9 @@ class TestLSTMInference:
         reason="Model files or processed data not present - run pipeline first"
     )
     def test_model_r2_above_threshold(self):
-        """
-        Re-evaluate the saved model on the test split.
-        Asserts R² > 0.95 — a degraded score signals model or data corruption.
-        Verified result from training run: R² = 0.9839
-        """
         import torch
         import joblib
-        import torch.nn as nn
         from sklearn.metrics import r2_score
-
-        class SolarLSTM(nn.Module):
-            def __init__(self, input_size, hidden=128, layers=2, dropout=0.2):
-                super().__init__()
-                self.lstm = nn.LSTM(input_size, hidden, layers,
-                                    batch_first=True,
-                                    dropout=dropout if layers > 1 else 0)
-                self.head = nn.Sequential(
-                    nn.Linear(hidden, 64), nn.ReLU(), nn.Linear(64, 1))
-            def forward(self, x):
-                out, _ = self.lstm(x)
-                return self.head(out[:, -1, :])
 
         feat_scaler = joblib.load(self.SCALER_FEAT)
         tgt_scaler  = joblib.load(self.SCALER_TGT)
@@ -315,7 +230,6 @@ class TestLSTMInference:
         FEAT = FEAT[:n_feat]
         df = df.dropna(subset=FEAT + [target])
 
-        # Use last 20% as test split (same as training)
         n       = len(df)
         test_df = df.iloc[int(n * 0.80):]
         SEQ     = 24
@@ -325,7 +239,7 @@ class TestLSTMInference:
 
         preds, actuals = [], []
         with torch.no_grad():
-            for i in range(SEQ, min(len(X_all), SEQ + 500)):  # sample 500 points
+            for i in range(SEQ, min(len(X_all), SEQ + 500)):
                 seq = torch.FloatTensor(X_all[i - SEQ: i]).unsqueeze(0)
                 p   = model(seq).numpy()
                 preds.append(p[0, 0])
@@ -335,16 +249,9 @@ class TestLSTMInference:
         actuals = tgt_scaler.inverse_transform(np.array(actuals).reshape(-1, 1))
         r2 = r2_score(actuals, preds)
 
-        assert r2 > 0.95, f"R² dropped below threshold: {r2:.4f} (expected > 0.95)"
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# STAGE 4 — Forecast Data Integrity
-# ══════════════════════════════════════════════════════════════════════════════
+        assert r2 > 0.95, f"R2 dropped below threshold: {r2:.4f} (expected > 0.95)"
 
 class TestForecastData:
-    """Validates the structure and sanity of the 10-year forecast CSV."""
-
     FORECAST_CSV = ROOT / "data" / "processed" / "monthly_forecast_10yr.csv"
 
     @pytest.mark.skipif(
@@ -369,7 +276,6 @@ class TestForecastData:
 
     @pytest.mark.skipif(not FORECAST_CSV.exists(), reason="Forecast CSV not generated yet")
     def test_degradation_reduces_output(self):
-        """Degraded kWh should be ≤ undegraded for every row."""
         df = pd.read_csv(self.FORECAST_CSV)
         assert (df["kwh_degraded"] <= df["kwh"] + 0.01).all(), \
             "Degraded kWh should never exceed undegraded"
@@ -384,23 +290,12 @@ class TestForecastData:
 
     @pytest.mark.skipif(not FORECAST_CSV.exists(), reason="Forecast CSV not generated yet")
     def test_delhi_annual_kwh_in_realistic_range(self):
-        """
-        Delhi 6 kWp should generate ~8,500–10,500 kWh/year.
-        Verified: Year 1 = 9,093 kWh.
-        """
         df = pd.read_csv(self.FORECAST_CSV)
         yr1 = df[df["year"] == 1]["kwh_degraded"].sum()
         assert 5_000 < yr1 < 15_000, \
             f"Annual generation out of realistic range: {yr1:.0f} kWh"
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# STAGE 7 — Flask API
-# ══════════════════════════════════════════════════════════════════════════════
-
 class TestAPI:
-    """Tests the Flask API endpoints using the test client."""
-
     @pytest.fixture(autouse=True)
     def setup_client(self):
         from app import app
@@ -416,7 +311,6 @@ class TestAPI:
     def test_health_endpoint(self):
         r = self.client.get("/health")
         data = json.loads(r.data)
-        # Status is either ok or degraded — both are valid responses
         assert data["status"] in ("ok", "degraded")
         assert "model" in data
         assert "forecast_ready" in data
@@ -438,11 +332,10 @@ class TestAPI:
         r = self.client.post("/predict",
                               data=json.dumps(payload),
                               content_type="application/json")
-        # Should return 400 or 503 (if model not loaded), never 500 internal crash
         assert r.status_code in (400, 503)
 
     def test_roi_missing_fields(self):
-        payload = {"system_kwp": 3.0}  # missing required fields
+        payload = {"system_kwp": 3.0}
         r = self.client.post("/roi-report",
                               data=json.dumps(payload),
                               content_type="application/json")
@@ -459,10 +352,6 @@ class TestAPI:
         reason="Forecast CSV not generated yet"
     )
     def test_roi_full_response_structure(self):
-        """
-        Full ROI report for reference system.
-        Verified: Delhi 6 kWp → payback 2 years 5 months, profit ₹7,06,011.
-        """
         payload = {
             "system_kwp": 6.0,
             "install_cost_rs": 270_000,
@@ -475,7 +364,6 @@ class TestAPI:
         assert r.status_code == 200
         data = json.loads(r.data)
 
-        # Structure checks
         assert "input" in data
         assert "subsidy" in data
         assert "result" in data
@@ -487,20 +375,13 @@ class TestAPI:
         assert "irr_annual_pct" in result
         assert "co2_saved_tonnes" in result
 
-        # Value checks — verified from actual pipeline run
         assert len(data["monthly_cashflow"]) == 120
         assert result["net_profit_10yr_rs"] > 0
         assert data["subsidy"]["pm_surya_ghar_rs"] == 105_000
         assert data["subsidy"]["net_investment_rs"] == 165_000
 
-        # Payback should be in the 1–5 year range for this system
         assert result["payback_years"] is not None
         assert 1.0 < result["payback_years"] < 5.0
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Standalone runner
-# ══════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
     import subprocess

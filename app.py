@@ -1,14 +1,13 @@
 import logging
 import sys
-import json
 import torch
-import torch.nn as nn
 import pandas as pd
 import numpy as np
 import joblib
 from flask import Flask, request, jsonify
 from pathlib import Path
-from typing import Optional
+
+from solar_common import SolarLSTM, STATE_TARIFFS, pm_surya_ghar_subsidy, _compute_irr, FEATURE_COLS, SEQUENCE_LENGTH, HIDDEN_SIZE, NUM_LAYERS, DROPOUT
 
 BASE_DIR    = Path(__file__).resolve().parent
 MODEL_DIR   = BASE_DIR / "models"
@@ -21,18 +20,6 @@ FEATURE_SCALER_PATH = MODEL_DIR / "feature_scaler_hourly.joblib"
 TARGET_SCALER_PATH  = MODEL_DIR / "target_scaler_hourly.joblib"
 FORECAST_CSV        = DATA_DIR  / "processed" / "monthly_forecast_10yr.csv"
 
-SEQUENCE_LENGTH = 24
-HIDDEN_SIZE     = 128
-NUM_LAYERS      = 2
-DROPOUT         = 0.2
-
-FEATURE_COLS = [
-    "ALLSKY_SFC_SW_DWN", "ALLSKY_SFC_SW_DNI", "ALLSKY_SFC_SW_DIFF",
-    "T2M", "WS10M",
-    "hour_sin", "hour_cos",
-    "month_sin", "month_cos",
-]
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -43,46 +30,11 @@ logging.basicConfig(
 )
 log = logging.getLogger("api")
 
-
-# ─── Model definition (must match training) ────────────────────────────────────
-class SolarLSTM(nn.Module):
-    def __init__(self, input_size, hidden=128, layers=2, dropout=0.2):
-        super().__init__()
-        self.lstm = nn.LSTM(input_size, hidden, layers,
-                            batch_first=True,
-                            dropout=dropout if layers > 1 else 0)
-        self.head = nn.Sequential(
-            nn.Linear(hidden, 64), nn.ReLU(), nn.Linear(64, 1)
-        )
-    def forward(self, x):
-        out, _ = self.lstm(x)
-        return self.head(out[:, -1, :])
-
-
-# ─── India tariff database ─────────────────────────────────────────────────────
-STATE_TARIFFS = {
-    "delhi": 8.50, "mumbai": 9.25, "bangalore": 7.10,
-    "hyderabad": 6.30, "chennai": 5.80, "kolkata": 7.00,
-    "pune": 9.00, "ahmedabad": 5.50, "jaipur": 6.80,
-    "lucknow": 6.50, "chandigarh": 4.90, "bhopal": 7.20,
-    "generic": 7.00,
-}
-
-
-def pm_surya_ghar_subsidy(kwp: float) -> float:
-    if kwp <= 1:   return 30_000
-    elif kwp <= 2: return 60_000
-    elif kwp <= 3: return 78_000
-    else:          return 78_000 + min(kwp - 3, 7) * 9_000
-
-
-# ─── Global loaded objects ─────────────────────────────────────────────────────
-MODEL         = None
-FEAT_SCALER   = None
-TGT_SCALER    = None
-DEVICE        = torch.device("cpu")
-INPUT_SIZE    = None  
-
+MODEL       = None
+FEAT_SCALER = None
+TGT_SCALER  = None
+DEVICE      = torch.device("cpu")
+INPUT_SIZE  = None
 
 def load_artifacts():
     global MODEL, FEAT_SCALER, TGT_SCALER, DEVICE, INPUT_SIZE
@@ -93,7 +45,7 @@ def load_artifacts():
     try:
         FEAT_SCALER = joblib.load(FEATURE_SCALER_PATH)
         INPUT_SIZE  = FEAT_SCALER.n_features_in_
-        log.info(f"Feature scaler loaded — {INPUT_SIZE} features")
+        log.info(f"Feature scaler loaded - {INPUT_SIZE} features")
     except Exception as e:
         log.critical(f"Feature scaler load failed: {e}")
         FEAT_SCALER = None
@@ -110,7 +62,6 @@ def load_artifacts():
         MODEL.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
         MODEL.to(DEVICE)
         MODEL.eval()
-        # Dummy pass to warm up
         dummy = torch.zeros(1, SEQUENCE_LENGTH, INPUT_SIZE or 5).to(DEVICE)
         with torch.no_grad():
             MODEL(dummy)
@@ -119,24 +70,7 @@ def load_artifacts():
         log.critical(f"Model load failed: {e}")
         MODEL = None
 
-
-# ─── Utility ──────────────────────────────────────────────────────────────────
-def _compute_irr(cashflows, guess=0.01, max_iter=1000, tol=1e-6):
-    r = guess
-    for _ in range(max_iter):
-        npv  = sum(cf / (1 + r) ** t for t, cf in enumerate(cashflows))
-        dnpv = sum(-t * cf / (1 + r) ** (t + 1)
-                   for t, cf in enumerate(cashflows) if t > 0)
-        if abs(dnpv) < 1e-12:
-            break
-        r_new = r - npv / dnpv
-        if abs(r_new - r) < tol:
-            return r_new
-        r = r_new
-    return r if -0.05 < r < 0.5 else None
-
-
-def _predict_one(data_list: list) -> float:
+def _predict_one(data_list):
     df = pd.DataFrame(data_list)
     feat_cols = [c for c in FEATURE_COLS if c in df.columns]
 
@@ -162,8 +96,7 @@ def _predict_one(data_list: list) -> float:
     pred_w = float(TGT_SCALER.inverse_transform(pred_scaled)[0, 0])
     return max(0.0, pred_w)
 
-
-def _run_roi(body: dict) -> dict:
+def _run_roi(body):
     system_kwp       = float(body.get("system_kwp", 3))
     install_cost     = float(body.get("install_cost_rs", 135_000))
     monthly_usage    = float(body.get("monthly_usage_kwh", 300))
@@ -182,10 +115,10 @@ def _run_roi(body: dict) -> dict:
         )
     forecast = pd.read_csv(FORECAST_CSV)
 
-    monthly_rows     = []
-    cumulative       = 0.0
-    payback_month    = None
-    cashflows        = [-net_cost]
+    monthly_rows  = []
+    cumulative    = 0.0
+    payback_month = None
+    cashflows     = [-net_cost]
 
     for _, row in forecast.iterrows():
         mo_idx = int(row["month_idx"])
@@ -221,7 +154,6 @@ def _run_roi(body: dict) -> dict:
     irr_monthly   = _compute_irr(cashflows)
     irr_annual    = ((1 + irr_monthly) ** 12 - 1) * 100 if irr_monthly else None
     payback_years = round(payback_month / 12, 2) if payback_month else None
-
     total_kwh = sum(r["kwh_generated"] for r in monthly_rows)
 
     return {
@@ -249,11 +181,8 @@ def _run_roi(body: dict) -> dict:
         "monthly_cashflow": monthly_rows,
     }
 
-
-# ─── Flask App ─────────────────────────────────────────────────────────────────
 app = Flask(__name__)
 load_artifacts()
-
 
 @app.route("/", methods=["GET"])
 def root():
@@ -268,7 +197,6 @@ def root():
         "model_ready": MODEL is not None,
     })
 
-
 @app.route("/health", methods=["GET"])
 def health():
     ok = MODEL is not None and FEAT_SCALER is not None and TGT_SCALER is not None
@@ -280,7 +208,6 @@ def health():
         "forecast_ready": FORECAST_CSV.exists(),
         "device":         str(DEVICE),
     }), 200 if ok else 503
-
 
 @app.route("/tariffs", methods=["GET"])
 def tariffs():
@@ -294,7 +221,6 @@ def tariffs():
             "3_to_10kWp": "78000 + 9000 per additional kWp",
         }
     })
-
 
 @app.route("/predict", methods=["POST"])
 def predict():
@@ -322,7 +248,6 @@ def predict():
         log.error(f"Predict error: {e}", exc_info=True)
         return jsonify({"error": "Internal prediction error"}), 500
 
-
 @app.route("/roi-report", methods=["POST"])
 def roi_report():
     if not request.is_json:
@@ -343,7 +268,6 @@ def roi_report():
     except Exception as e:
         log.error(f"ROI error: {e}", exc_info=True)
         return jsonify({"error": "Internal ROI calculation error", "detail": str(e)}), 500
-
 
 if __name__ == "__main__":
     host = "127.0.0.1"
