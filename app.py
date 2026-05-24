@@ -2,7 +2,7 @@ import logging
 import sys
 import pandas as pd
 import numpy as np
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from pathlib import Path
 
 from solar_common import STATE_TARIFFS, pm_surya_ghar_subsidy, _compute_irr
@@ -28,15 +28,84 @@ app = Flask(__name__)
 
 @app.route("/", methods=["GET"])
 def root():
-    return jsonify({
-        "service": "Solar ROI Prediction API",
-        "endpoints": {
-            "GET  /health":     "Service health check",
-            "POST /roi-report": "Full 10-year ROI analysis",
-            "GET  /tariffs":    "Supported cities and tariffs",
-        },
-        "forecast_ready": FORECAST_CSV.exists(),
-    })
+    accept = request.headers.get("Accept", "")
+    wants_html = "text/html" in accept and ("application/json" not in accept or accept.index("text/html") < accept.index("application/json"))
+    if not wants_html:
+        return jsonify({
+            "service": "Solar ROI Prediction API",
+            "endpoints": {
+                "GET  /health":     "Service health check",
+                "POST /roi-report": "Full 10-year ROI analysis",
+                "GET  /tariffs":    "Supported cities and tariffs",
+            },
+            "forecast_ready": FORECAST_CSV.exists(),
+        })
+
+    try:
+        result = _run_roi({
+            "system_kwp": 6.0,
+            "install_cost_rs": 270000,
+            "monthly_usage_kwh": 450,
+            "city": "delhi",
+        })
+    except Exception:
+        return "<html><body><h1>Solar ROI API</h1><p>Forecast data not ready. Run stage4_forecast_10yr.py first.</p></body></html>"
+
+    inp  = result["input"]
+    sub  = result["subsidy"]
+    res  = result["result"]
+    pb   = res["payback_years"]
+    yrs  = int(pb)
+    mos  = round((pb - yrs) * 12)
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solar ROI Predictor</title>
+<style>
+  body {{ font-family: Helvetica, Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; color: #333; }}
+  h1 {{ text-align: center; color: #1a5276; }}
+  .report {{ background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; }}
+  .row {{ display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; }}
+  .row:last-child {{ border: none; }}
+  .label {{ color: #555; }}
+  .value {{ font-weight: bold; }}
+  .highlight {{ background: #d4edda; border-radius: 6px; padding: 10px 14px; margin: 12px 0; }}
+  .highlight .row {{ border: none; }}
+  .endpoints {{ margin-top: 24px; font-size: 0.85em; color: #666; }}
+  code {{ background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }}
+</style>
+</head>
+<body>
+<h1>Solar ROI Predictor</h1>
+<div class="report">
+  <div class="row"><span class="label">System</span><span class="value">{inp['system_kwp']} kWp</span></div>
+  <div class="row"><span class="label">City</span><span class="value">{inp['city'].title()}</span></div>
+  <div class="row"><span class="label">Install cost</span><span class="value">Rs {inp['install_cost_rs']:,}</span></div>
+  <div class="row"><span class="label">PM Surya Ghar subsidy</span><span class="value" style="color:#27ae60;">Rs {sub['pm_surya_ghar_rs']:,}</span></div>
+  <div class="row"><span class="label">Net investment</span><span class="value">Rs {sub['net_investment_rs']:,}</span></div>
+
+  <div class="highlight">
+    <div class="row"><span class="label">Payback period</span><span class="value" style="color:#e67e22;">{yrs} years {mos} months</span></div>
+    <div class="row"><span class="label">10-year net profit</span><span class="value" style="color:#27ae60;">Rs {res['net_profit_10yr_rs']:,}</span></div>
+    <div class="row"><span class="label">Annual IRR</span><span class="value" style="color:#2980b9;">{res['irr_annual_pct']:.1f}%</span></div>
+  </div>
+
+  <div class="row"><span class="label">Total generation</span><span class="value">{res['total_10yr_kwh']:,} kWh</span></div>
+  <div class="row"><span class="label">CO2 offset</span><span class="value">{res['co2_saved_tonnes']:.1f} tonnes</span></div>
+</div>
+
+<div class="endpoints">
+  <p>API endpoints:</p>
+  <p><code>POST /roi-report</code> — custom scenario</p>
+  <p><code>GET /tariffs</code> — DISCOM rates</p>
+  <p><code>GET /health</code> — status</p>
+</div>
+</body>
+</html>"""
+    return make_response(html, 200, {"Content-Type": "text/html; charset=utf-8"})
 
 @app.route("/health", methods=["GET"])
 def health():
