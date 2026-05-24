@@ -12,7 +12,7 @@ A solar investment calculator for the Indian residential market.
 
 > With a 6 kWp system in Delhi at Rs 2,70,000 installed cost,
 > break even is 2 years 5 months.
-> 10-year net profit: Rs 7,06,011. Annual IRR: 54.6%.
+> 10-year net profit: Rs 6,83,732. Annual IRR: 53.0%.
 
 </div>
 
@@ -83,7 +83,7 @@ All results from running the pipeline on New Delhi (28.61N, 77.20E).
 | Year 3 | 8,750 kWh |
 | Year 5 | 8,663 kWh |
 | Year 10 | 8,448 kWh |
-| 10-yr total | 86,425 kWh |
+| 10-yr total | 86,421 kWh |
 
 ![10-Year Forecast](plots/forecast_10yr.png)
 
@@ -96,9 +96,9 @@ All results from running the pipeline on New Delhi (28.61N, 77.20E).
 | Base DISCOM tariff (Delhi) | Rs 8.50/kWh |
 | Tariff escalation | 6%/year |
 | Payback period | 2 years 5 months |
-| 10-year net profit | Rs 7,06,011 |
-| Annual IRR | 54.6% |
-| CO2 offset over 10 years | 72.9 tonnes |
+| 10-year net profit | Rs 6,83,732 |
+| Annual IRR | 53.0% |
+| CO2 offset over 10 years | 70.9 tonnes |
 
 ![ROI Analysis](plots/roi_analysis.png)
 
@@ -184,9 +184,9 @@ curl -X POST http://127.0.0.1:5001/roi-report \
   "subsidy": { "pm_surya_ghar_rs": 105000, "net_investment_rs": 165000 },
   "result":  {
     "payback_readable":   "2 years 5 months",
-    "net_profit_10yr_rs": 706011,
-    "irr_annual_pct":     54.56,
-    "total_10yr_kwh":     86425,
+    "net_profit_10yr_rs": 683732,
+    "irr_annual_pct":     53.04,
+    "total_10yr_kwh":     86421,
     "co2_saved_tonnes":   70.87
   },
   "monthly_cashflow": [ ... 120 rows ... ]
