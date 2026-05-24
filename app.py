@@ -1,24 +1,18 @@
 import logging
 import sys
-import torch
 import pandas as pd
 import numpy as np
-import joblib
 from flask import Flask, request, jsonify
 from pathlib import Path
 
-from solar_common import SolarLSTM, STATE_TARIFFS, pm_surya_ghar_subsidy, _compute_irr, FEATURE_COLS, SEQUENCE_LENGTH, HIDDEN_SIZE, NUM_LAYERS, DROPOUT
+from solar_common import STATE_TARIFFS, pm_surya_ghar_subsidy, _compute_irr
 
 BASE_DIR    = Path(__file__).resolve().parent
-MODEL_DIR   = BASE_DIR / "models"
 DATA_DIR    = BASE_DIR / "data"
 LOG_DIR     = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 
-MODEL_PATH          = MODEL_DIR / "best_lstm_model_hourly.pth"
-FEATURE_SCALER_PATH = MODEL_DIR / "feature_scaler_hourly.joblib"
-TARGET_SCALER_PATH  = MODEL_DIR / "target_scaler_hourly.joblib"
-FORECAST_CSV        = DATA_DIR  / "processed" / "monthly_forecast_10yr.csv"
+FORECAST_CSV = DATA_DIR / "processed" / "monthly_forecast_10yr.csv"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -30,71 +24,61 @@ logging.basicConfig(
 )
 log = logging.getLogger("api")
 
-MODEL       = None
-FEAT_SCALER = None
-TGT_SCALER  = None
-DEVICE      = torch.device("cpu")
-INPUT_SIZE  = None
+app = Flask(__name__)
 
-def load_artifacts():
-    global MODEL, FEAT_SCALER, TGT_SCALER, DEVICE, INPUT_SIZE
+@app.route("/", methods=["GET"])
+def root():
+    return jsonify({
+        "service": "Solar ROI Prediction API",
+        "endpoints": {
+            "GET  /health":     "Service health check",
+            "POST /roi-report": "Full 10-year ROI analysis",
+            "GET  /tariffs":    "Supported cities and tariffs",
+        },
+        "forecast_ready": FORECAST_CSV.exists(),
+    })
 
-    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    log.info(f"Device: {DEVICE}")
+@app.route("/health", methods=["GET"])
+def health():
+    ok = FORECAST_CSV.exists()
+    return jsonify({
+        "status": "ok" if ok else "degraded",
+        "forecast_ready": FORECAST_CSV.exists(),
+    }), 200 if ok else 503
+
+@app.route("/tariffs", methods=["GET"])
+def tariffs():
+    return jsonify({
+        "tariffs_rs_per_kwh": STATE_TARIFFS,
+        "note": "FY 2024-25 residential DISCOM rates",
+        "pm_surya_ghar_subsidy_slabs": {
+            "upto_1kWp": 30_000,
+            "1_to_2kWp": 60_000,
+            "2_to_3kWp": 78_000,
+            "3_to_10kWp": "78000 + 9000 per additional kWp",
+        }
+    })
+
+@app.route("/roi-report", methods=["POST"])
+def roi_report():
+    if not request.is_json:
+        return jsonify({"error": "Content-Type must be application/json"}), 415
+
+    body = request.get_json()
+    required = ["system_kwp", "install_cost_rs", "monthly_usage_kwh", "city"]
+    missing  = [f for f in required if f not in body]
+    if missing:
+        return jsonify({"error": f"Missing fields: {missing}"}), 400
 
     try:
-        FEAT_SCALER = joblib.load(FEATURE_SCALER_PATH)
-        INPUT_SIZE  = FEAT_SCALER.n_features_in_
-        log.info(f"Feature scaler loaded - {INPUT_SIZE} features")
+        result = _run_roi(body)
+        return jsonify(result)
+    except FileNotFoundError as e:
+        return jsonify({"error": str(e),
+                        "hint": "Run stage4_forecast_10yr.py to generate the forecast first"}), 503
     except Exception as e:
-        log.critical(f"Feature scaler load failed: {e}")
-        FEAT_SCALER = None
-
-    try:
-        TGT_SCALER = joblib.load(TARGET_SCALER_PATH)
-        log.info("Target scaler loaded")
-    except Exception as e:
-        log.critical(f"Target scaler load failed: {e}")
-        TGT_SCALER = None
-
-    try:
-        MODEL = SolarLSTM(INPUT_SIZE or 5, HIDDEN_SIZE, NUM_LAYERS, DROPOUT)
-        MODEL.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
-        MODEL.to(DEVICE)
-        MODEL.eval()
-        dummy = torch.zeros(1, SEQUENCE_LENGTH, INPUT_SIZE or 5).to(DEVICE)
-        with torch.no_grad():
-            MODEL(dummy)
-        log.info("LSTM model loaded and warm-up passed")
-    except Exception as e:
-        log.critical(f"Model load failed: {e}")
-        MODEL = None
-
-def _predict_one(data_list):
-    df = pd.DataFrame(data_list)
-    feat_cols = [c for c in FEATURE_COLS if c in df.columns]
-
-    if "Timestamp" in df.columns or "timestamp" in df.columns:
-        ts_col = "Timestamp" if "Timestamp" in df.columns else "timestamp"
-        df.index = pd.to_datetime(df[ts_col])
-        df["hour_sin"]  = np.sin(2 * np.pi * df.index.hour / 24)
-        df["hour_cos"]  = np.cos(2 * np.pi * df.index.hour / 24)
-        df["month_sin"] = np.sin(2 * np.pi * df.index.month / 12)
-        df["month_cos"] = np.cos(2 * np.pi * df.index.month / 12)
-        feat_cols = [c for c in FEATURE_COLS if c in df.columns]
-
-    if len(df) < SEQUENCE_LENGTH:
-        raise ValueError(f"Need {SEQUENCE_LENGTH} hours, got {len(df)}")
-
-    seq_df = df.iloc[-SEQUENCE_LENGTH:][feat_cols[:INPUT_SIZE]]
-    X      = FEAT_SCALER.transform(seq_df.values)
-    tensor = torch.FloatTensor(X).unsqueeze(0).to(DEVICE)
-
-    with torch.no_grad():
-        pred_scaled = MODEL(tensor).cpu().numpy()
-
-    pred_w = float(TGT_SCALER.inverse_transform(pred_scaled)[0, 0])
-    return max(0.0, pred_w)
+        log.error(f"ROI error: {e}", exc_info=True)
+        return jsonify({"error": "Internal ROI calculation error", "detail": str(e)}), 500
 
 def _run_roi(body):
     system_kwp       = float(body.get("system_kwp", 3))
@@ -115,10 +99,10 @@ def _run_roi(body):
         )
     forecast = pd.read_csv(FORECAST_CSV)
 
-    monthly_rows  = []
-    cumulative    = 0.0
+    monthly_rows = []
+    cumulative   = 0.0
     payback_month = None
-    cashflows     = [-net_cost]
+    cashflows    = [-net_cost]
 
     for _, row in forecast.iterrows():
         mo_idx = int(row["month_idx"])
@@ -181,96 +165,8 @@ def _run_roi(body):
         "monthly_cashflow": monthly_rows,
     }
 
-app = Flask(__name__)
-load_artifacts()
-
-@app.route("/", methods=["GET"])
-def root():
-    return jsonify({
-        "service": "Solar ROI Prediction API v2",
-        "endpoints": {
-            "GET  /health":     "Service health check",
-            "POST /predict":    "Next-hour AC power (W)",
-            "POST /roi-report": "Full 10-year ROI analysis",
-            "GET  /tariffs":    "Supported cities and tariffs",
-        },
-        "model_ready": MODEL is not None,
-    })
-
-@app.route("/health", methods=["GET"])
-def health():
-    ok = MODEL is not None and FEAT_SCALER is not None and TGT_SCALER is not None
-    return jsonify({
-        "status": "ok" if ok else "degraded",
-        "model":          MODEL is not None,
-        "feat_scaler":    FEAT_SCALER is not None,
-        "tgt_scaler":     TGT_SCALER is not None,
-        "forecast_ready": FORECAST_CSV.exists(),
-        "device":         str(DEVICE),
-    }), 200 if ok else 503
-
-@app.route("/tariffs", methods=["GET"])
-def tariffs():
-    return jsonify({
-        "tariffs_rs_per_kwh": STATE_TARIFFS,
-        "note": "FY 2024-25 residential DISCOM rates",
-        "pm_surya_ghar_subsidy_slabs": {
-            "upto_1kWp": 30_000,
-            "1_to_2kWp": 60_000,
-            "2_to_3kWp": 78_000,
-            "3_to_10kWp": "78000 + 9000 per additional kWp",
-        }
-    })
-
-@app.route("/predict", methods=["POST"])
-def predict():
-    if not request.is_json:
-        return jsonify({"error": "Content-Type must be application/json"}), 415
-
-    if MODEL is None or FEAT_SCALER is None or TGT_SCALER is None:
-        return jsonify({"error": "Model not loaded"}), 503
-
-    body = request.get_json()
-    data = body.get("data")
-    if not isinstance(data, list):
-        return jsonify({"error": "'data' must be a list of hourly weather dicts"}), 400
-
-    try:
-        power_w = _predict_one(data)
-        return jsonify({
-            "predicted_power_W": round(power_w, 2),
-            "predicted_power_kW": round(power_w / 1000, 4),
-            "unit": "Watts",
-        })
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 400
-    except Exception as e:
-        log.error(f"Predict error: {e}", exc_info=True)
-        return jsonify({"error": "Internal prediction error"}), 500
-
-@app.route("/roi-report", methods=["POST"])
-def roi_report():
-    if not request.is_json:
-        return jsonify({"error": "Content-Type must be application/json"}), 415
-
-    body = request.get_json()
-    required = ["system_kwp", "install_cost_rs", "monthly_usage_kwh", "city"]
-    missing  = [f for f in required if f not in body]
-    if missing:
-        return jsonify({"error": f"Missing fields: {missing}"}), 400
-
-    try:
-        result = _run_roi(body)
-        return jsonify(result)
-    except FileNotFoundError as e:
-        return jsonify({"error": str(e),
-                        "hint": "Run stage4_forecast_10yr.py to generate the forecast first"}), 503
-    except Exception as e:
-        log.error(f"ROI error: {e}", exc_info=True)
-        return jsonify({"error": "Internal ROI calculation error", "detail": str(e)}), 500
-
 if __name__ == "__main__":
     host = "127.0.0.1"
     port = 5001
-    log.info(f"Starting Solar ROI API v2 on http://{host}:{port}")
+    log.info(f"Starting Solar ROI API on http://{host}:{port}")
     app.run(host=host, port=port, debug=False)
