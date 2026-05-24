@@ -154,6 +154,12 @@ python app.py
 # Running at http://127.0.0.1:5001
 ```
 
+### Web Dashboard
+
+Open `http://127.0.0.1:5001` in a browser for a formatted ROI report. Visits from browsers get an HTML page; API calls (`curl`, `requests`) still get JSON.
+
+![Web Dashboard](plots/Web%20Dashboard.png)
+
 ## API Reference
 
 ### GET /health
