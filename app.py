@@ -165,7 +165,43 @@ def _run_roi(body):
         "monthly_cashflow": monthly_rows,
     }
 
+def _print_report(result):
+    inp  = result["input"]
+    sub  = result["subsidy"]
+    res  = result["result"]
+    pb   = res["payback_years"]
+    yrs  = int(pb)
+    mos  = round((pb - yrs) * 12)
+
+    print("\n" + "=" * 55)
+    print("  SOLAR ROI ANALYSIS REPORT")
+    print("=" * 55)
+    print(f"  System size:          {inp['system_kwp']} kWp")
+    print(f"  City:                 {inp['city'].title()}")
+    print(f"  Install cost:         Rs{inp['install_cost_rs']:,.0f}")
+    print(f"  PM Surya Ghar subsidy:Rs{sub['pm_surya_ghar_rs']:,.0f}")
+    print(f"  Net investment:       Rs{sub['net_investment_rs']:,.0f}")
+    print("-" * 55)
+    print(f"  PAYBACK PERIOD:       {yrs} years {mos} months")
+    print(f"  10-yr net profit:     Rs{res['net_profit_10yr_rs']:,.0f}")
+    print(f"  Annual IRR:           {res['irr_annual_pct']:.1f}%")
+    print("-" * 55)
+    print(f"  Total generation:     {res['total_10yr_kwh']:,.0f} kWh")
+    print(f"  CO2 offset:           {res['co2_saved_tonnes']:.1f} tonnes")
+    print("=" * 55)
+
 if __name__ == "__main__":
+    print("=== Solar ROI Prediction API ===")
+    try:
+        result = _run_roi({
+            "system_kwp": 6.0,
+            "install_cost_rs": 270000,
+            "monthly_usage_kwh": 450,
+            "city": "delhi",
+        })
+        _print_report(result)
+    except Exception as e:
+        log.warning(f"Default report skipped: {e}")
     host = "127.0.0.1"
     port = 5001
     log.info(f"Starting Solar ROI API on http://{host}:{port}")
